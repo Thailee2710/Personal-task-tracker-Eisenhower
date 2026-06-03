@@ -1,3 +1,6 @@
+import stat
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -12,6 +15,16 @@ def make_client(tmp_path):
         secret_key="test-secret-key",
     )
     return TestClient(app)
+
+
+def test_templates_are_readable_by_service_user():
+    template_dir = Path(__file__).resolve().parents[1] / "templates"
+    unreadable = []
+    for template in template_dir.glob("*.html"):
+        mode = template.stat().st_mode
+        if not mode & stat.S_IROTH:
+            unreadable.append(template.name)
+    assert unreadable == []
 
 
 def test_dashboard_requires_login(tmp_path):
