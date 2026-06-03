@@ -22,6 +22,7 @@
       <a class="nav-pill active" href="/">Matrix</a>
       <a class="nav-pill" href="/weekly-plan">Weekly Plan</a>
       <a class="nav-pill" href="/calendar">Calendar</a>
+      <a class="nav-pill notification-bell" href="/notifications{% if today %}?today={{ today }}{% endif %}" title="Notifications" aria-label="Notifications">🔔{% if notification_count %}<span class="bell-count">{{ notification_count }}</span>{% endif %}</a>
       <a class="nav-pill" href="/history">History</a>
       <a class="nav-pill" href="/settings">Settings</a>
       <form method="post" action="/logout">
@@ -51,40 +52,6 @@
       <strong>{{ counts['q4'] }}</strong>
       <small>Không quan trọng / không gấp</small>
     </a>
-  </section>
-
-  <section class="new-task notification-panel {% if notification_count == 0 %}quiet-notifications{% endif %}" aria-label="Thông báo deadline">
-    <div class="section-title">
-      <div>
-        <p class="eyebrow">Notifications</p>
-        <h2>Thông báo deadline</h2>
-      </div>
-      <span class="hint-pill">{{ notification_count }} task cần chú ý</span>
-    </div>
-    {% if notification_count %}
-    <div class="notification-grid">
-      <div class="notification-column overdue-note">
-        <h3>Hết hạn</h3>
-        {% for task in notifications['overdue'] %}
-        <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>Deadline: {{ task.due_date }} · {{ quadrants[task.quadrant].title }}</small></a>
-        {% else %}<p>Không có task quá hạn.</p>{% endfor %}
-      </div>
-      <div class="notification-column today-note">
-        <h3>Hôm nay đến hạn</h3>
-        {% for task in notifications['today'] %}
-        <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>Deadline: {{ task.due_date }} · {{ quadrants[task.quadrant].title }}</small></a>
-        {% else %}<p>Không có task đến hạn hôm nay.</p>{% endfor %}
-      </div>
-      <div class="notification-column tomorrow-note">
-        <h3>Sắp hết hạn trong 1 ngày</h3>
-        {% for task in notifications['tomorrow'] %}
-        <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>Deadline: {{ task.due_date }} · {{ quadrants[task.quadrant].title }}</small></a>
-        {% else %}<p>Không có task đến hạn ngày mai.</p>{% endfor %}
-      </div>
-    </div>
-    {% else %}
-    <p>Không có task quá hạn, đến hạn hôm nay hoặc sắp hết hạn trong 1 ngày.</p>
-    {% endif %}
   </section>
 
   <section class="new-task energy-panel" aria-label="Gợi ý task theo năng lượng">

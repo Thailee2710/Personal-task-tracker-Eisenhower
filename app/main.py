@@ -191,6 +191,7 @@ def create_app(
                 "counts": counts,
                 "notifications": notifications,
                 "notification_count": notification_count,
+                "today": today,
                 "selected_energy": energy,
                 "energy_suggestions": energy_suggestions,
             },
@@ -219,6 +220,22 @@ def create_app(
         daily_minutes = {day: str(form.get(day) or 0) for day in days}
         set_weekly_capacity(db_path, week_start=start.isoformat(), daily_minutes=daily_minutes)
         return RedirectResponse(f"/weekly-plan?week_start={start.isoformat()}", status_code=303)
+
+    @app.get("/notifications", response_class=HTMLResponse)
+    async def notifications_page(request: Request, username: str = Depends(require_user), today: str | None = None):
+        notifications = list_due_notifications(db_path, today=_parse_focus_date(today) if today else None)
+        notification_count = sum(len(tasks) for tasks in notifications.values())
+        return templates.TemplateResponse(
+            request,
+            "notifications.html",
+            {
+                "username": username,
+                "quadrants": QUADRANTS,
+                "notifications": notifications,
+                "notification_count": notification_count,
+                "today": today,
+            },
+        )
 
     @app.get("/calendar", response_class=HTMLResponse)
     async def calendar_page(

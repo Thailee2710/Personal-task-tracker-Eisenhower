@@ -210,7 +210,7 @@ def test_settings_page_updates_username_and_password_in_app(tmp_path):
     assert client.get("/").status_code == 200
 
 
-def test_dashboard_shows_due_notification_sections(tmp_path):
+def test_notifications_move_from_matrix_to_bell_page(tmp_path):
     client = make_client(tmp_path)
     client.post("/login", data={"username": "admin", "password": "secret-pass"})
     client.post("/tasks", data={"title": "Hết hạn hôm qua", "quadrant": "q1", "due_date": "2026-06-02"})
@@ -220,13 +220,21 @@ def test_dashboard_shows_due_notification_sections(tmp_path):
     dashboard = client.get("/?today=2026-06-03")
 
     assert dashboard.status_code == 200
-    assert "Thông báo deadline" in dashboard.text
-    assert "Hết hạn" in dashboard.text
-    assert "Hôm nay đến hạn" in dashboard.text
-    assert "Sắp hết hạn trong 1 ngày" in dashboard.text
-    assert "Hết hạn hôm qua" in dashboard.text
-    assert "Đến hạn hôm nay" in dashboard.text
-    assert "Sắp hết hạn mai" in dashboard.text
+    assert "🔔" in dashboard.text
+    assert "href=\"/notifications" in dashboard.text
+    assert "Thông báo deadline" not in dashboard.text
+    assert "notification-panel" not in dashboard.text
+
+    notifications = client.get("/notifications?today=2026-06-03")
+
+    assert notifications.status_code == 200
+    assert "Thông báo deadline" in notifications.text
+    assert "Hết hạn" in notifications.text
+    assert "Hôm nay đến hạn" in notifications.text
+    assert "Sắp hết hạn trong 1 ngày" in notifications.text
+    assert "Hết hạn hôm qua" in notifications.text
+    assert "Đến hạn hôm nay" in notifications.text
+    assert "Sắp hết hạn mai" in notifications.text
 
 
 def test_weekly_plan_page_updates_capacity_and_shows_buffer(tmp_path):
