@@ -27,6 +27,32 @@ def test_templates_are_readable_by_service_user():
     assert unreadable == []
 
 
+def test_project_signature_asset_is_readable_and_documented():
+    root = Path(__file__).resolve().parents[1]
+    signature = root / "static" / "signature.svg"
+    readme = root / "README.md"
+
+    assert signature.exists()
+    assert signature.stat().st_mode & stat.S_IROTH
+    assert "Project signature" in signature.read_text(encoding="utf-8")
+    assert "![Project signature](static/signature.svg)" in readme.read_text(encoding="utf-8")
+
+
+def test_login_and_dashboard_show_project_signature(tmp_path):
+    client = make_client(tmp_path)
+
+    login = client.get("/login")
+    assert login.status_code == 200
+    assert 'src="/static/signature.svg"' in login.text
+    assert 'alt="Project signature"' in login.text
+
+    client.post("/login", data={"username": "admin", "password": "secret-pass"})
+    dashboard = client.get("/")
+    assert dashboard.status_code == 200
+    assert 'src="/static/signature.svg"' in dashboard.text
+    assert 'alt="Project signature"' in dashboard.text
+
+
 def test_dashboard_requires_login(tmp_path):
     client = make_client(tmp_path)
     response = client.get("/", follow_redirects=False)

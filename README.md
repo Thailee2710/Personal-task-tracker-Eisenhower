@@ -1,5 +1,7 @@
 # Personal Task Tracker — Eisenhower Matrix
 
+![Project signature](static/signature.svg)
+
 A simple task management web app based on the Eisenhower Matrix. It helps you capture tasks, prioritize what matters, plan your week, and track deadlines in a clean interface.
 
 ## Features
@@ -38,6 +40,7 @@ A simple task management web app based on the Eisenhower Matrix. It helps you ca
 │   ├── core.py
 │   └── main.py
 ├── static/
+│   ├── signature.svg
 │   └── styles.css
 ├── templates/
 │   ├── login.html
