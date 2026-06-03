@@ -401,6 +401,11 @@ def get_weekly_plan(db_path: str | Path, *, week_start: str) -> dict[str, Any]:
     required_minutes = sum(quadrant_minutes.values())
     available_minutes = sum(capacities.values())
     buffer_minutes = available_minutes - required_minutes
+    risk_cutoff = (start + timedelta(days=2)).isoformat()
+    q2_focus_tasks = [task for task in tasks if task["quadrant"] == "q2"][:3]
+    for task in q2_focus_tasks:
+        task["q2_risk"] = bool(task.get("due_date") and task["due_date"] <= risk_cutoff)
+    q2_risk_count = len([task for task in q2_focus_tasks if task.get("q2_risk")])
     return {
         "week_start": start.isoformat(),
         "week_end": end.isoformat(),
@@ -416,6 +421,10 @@ def get_weekly_plan(db_path: str | Path, *, week_start: str) -> dict[str, Any]:
         "buffer_label": format_minutes(buffer_minutes),
         "quadrant_minutes": quadrant_minutes,
         "quadrant_labels": {key: format_minutes(minutes) for key, minutes in quadrant_minutes.items()},
+        "q2_focus_tasks": q2_focus_tasks,
+        "q2_minutes": quadrant_minutes["q2"],
+        "q2_label": format_minutes(quadrant_minutes["q2"]),
+        "q2_risk_count": q2_risk_count,
         "has_shortfall": buffer_minutes < 0,
     }
 

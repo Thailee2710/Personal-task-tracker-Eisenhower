@@ -179,6 +179,21 @@ def test_weekly_plan_sums_capacity_task_time_and_quadrants(tmp_path):
     assert [task["title"] for task in plan["tasks_by_day"]["2026-06-03"]] == ["Deep Q2"]
 
 
+def test_weekly_plan_surfaces_q2_focus_and_urgent_risk(tmp_path):
+    db_path = tmp_path / "tasks.sqlite"
+    init_db(db_path)
+    create_task(db_path, title="Q2 gần hạn", quadrant="q2", due_date="2026-06-02", duration_minutes=60)
+    create_task(db_path, title="Q2 cuối tuần", quadrant="q2", due_date="2026-06-07", duration_minutes=90)
+    create_task(db_path, title="Q1 không phải focus", quadrant="q1", due_date="2026-06-02", duration_minutes=30)
+
+    plan = get_weekly_plan(db_path, week_start="2026-06-01")
+
+    assert [task["title"] for task in plan["q2_focus_tasks"]] == ["Q2 gần hạn", "Q2 cuối tuần"]
+    assert plan["q2_minutes"] == 150
+    assert plan["q2_risk_count"] == 1
+    assert plan["q2_focus_tasks"][0]["q2_risk"] is True
+
+
 def test_energy_suggestions_prioritize_matching_unfinished_tasks(tmp_path):
     db_path = tmp_path / "tasks.sqlite"
     init_db(db_path)

@@ -247,6 +247,19 @@ def test_weekly_plan_page_updates_capacity_and_shows_buffer(tmp_path):
     assert "3h 15m" in weekly.text
 
 
+def test_weekly_plan_shows_q2_focus_protection(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/login", data={"username": "admin", "password": "secret-pass"})
+    client.post("/tasks", data={"title": "Q2 học chứng chỉ", "quadrant": "q2", "due_date": "2026-06-02", "duration_minutes": "90"})
+
+    weekly = client.get("/weekly-plan?week_start=2026-06-01")
+
+    assert weekly.status_code == 200
+    assert "Q2 Focus" in weekly.text
+    assert "Q2 học chứng chỉ" in weekly.text
+    assert "sắp thành Q1" in weekly.text
+
+
 def test_dashboard_can_suggest_tasks_by_energy_level(tmp_path):
     client = make_client(tmp_path)
     client.post("/login", data={"username": "admin", "password": "secret-pass"})

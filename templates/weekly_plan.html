@@ -91,6 +91,27 @@
     </div>
   </section>
 
+  <section class="new-task q2-focus-panel">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Golden zone</p>
+        <h2>Q2 Focus</h2>
+      </div>
+      <span class="hint-pill">{{ plan.q2_label }} Q2 · {{ plan.q2_risk_count }} task sắp thành Q1</span>
+    </div>
+    <div class="suggestion-list">
+      {% for task in plan.q2_focus_tasks %}
+      <article class="notification-item {% if task.q2_risk %}q2-risk{% endif %}">
+        <strong>{{ task.title }}</strong>
+        <small>{{ task.duration_minutes|minutes }} · deadline {{ task.due_date }}</small>
+        {% if task.q2_risk %}<small class="risk-text">Cảnh báo: task Q2 này sắp thành Q1 nếu không xử lý sớm.</small>{% endif %}
+      </article>
+      {% else %}
+      <p>Tuần này chưa có Q2 focus. Hãy lên lịch ít nhất một việc quan trọng nhưng chưa khẩn cấp.</p>
+      {% endfor %}
+    </div>
+  </section>
+
   <main class="weekly-grid">
     {% for day in plan.days %}
     <section class="calendar-cell">
