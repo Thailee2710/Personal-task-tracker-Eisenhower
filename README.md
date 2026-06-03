@@ -1,35 +1,89 @@
 # Personal Task Tracker — Eisenhower Matrix
 
-A lightweight self-hosted task tracker built with **FastAPI + SQLite**. It helps you capture tasks quickly and organize them with the Eisenhower Matrix:
+A lightweight self-hosted task tracker built with **FastAPI + SQLite**. It helps you capture tasks quickly, organize them with the Eisenhower Matrix, plan weekly capacity, and keep deadline alerts separate from the main Matrix dashboard.
+
+The app is designed for small VPS deployments: minimal dependencies, no database server, no Docker requirement, and a simple server-rendered UI.
+
+## Current status
+
+- Repository: `https://github.com/Thailee2710/Personal-task-tracker-Eisenhower.git`
+- Production-style app path used by the deployment guide: `/opt/eisenhower-task`
+- Backend: FastAPI + Uvicorn
+- Storage: SQLite
+- UI: server-rendered Jinja templates + plain CSS
+- Test suite: pytest
+- Current expected test result: `26 passed`
+
+## Eisenhower quadrants
 
 - **Q1 — Do now**: Important + urgent
 - **Q2 — Schedule**: Important + not urgent
 - **Q3 — Delegate / quick handle**: Not important + urgent
 - **Q4 — Eliminate / low backlog**: Not important + not urgent
 
-The app is designed for small VPS deployments: minimal dependencies, no database server, no Docker requirement, and a simple server-rendered UI.
-
 ## Features
 
-- Login/logout with signed cookie sessions
-- In-app username/password change page
-- Quick task creation
-- Automatic quadrant classification from `important` / `urgent` flags
-- Direct quick-add inside each quadrant
-- Task notes, due date, and estimated duration
-- Move tasks between quadrants
-- Mark tasks done / reopen
-- Soft delete: deleted tasks disappear from the dashboard but remain in History
-- Calendar views for deadlines: day, week, month, year
-- Weekly planning page with capacity input, required time, buffer/shortfall, and quadrant time budget
-- Energy level per task (`low` / `medium` / `high`) with dashboard suggestions based on current energy
-- History page for all tasks: active, backlog, done, deleted
-- Deadline notification panel on the dashboard:
+### Authentication and security
+
+- Login/logout with signed cookie sessions.
+- In-app username/password change page.
+- Initial admin credentials are created only when the user table is empty.
+- After credentials are changed in-app, the SQLite database is the source of truth for login.
+- Designed to run behind nginx, optionally with nginx Basic Auth as a second protection layer.
+
+### Matrix task management
+
+- Main Matrix dashboard at `/`.
+- Quick task creation with important/urgent flags.
+- Automatic quadrant classification from `important` / `urgent` flags.
+- Direct quick-add form inside each quadrant.
+- Task notes, due date, estimated duration, and energy level.
+- Move tasks between quadrants.
+- Mark tasks done / reopen.
+- Soft delete: deleted tasks disappear from the dashboard but remain visible in History.
+
+### Calendar and history
+
+- Calendar page at `/calendar`.
+- Deadline views by day, week, month, and year:
+  - `/calendar?view=day&date=YYYY-MM-DD`
+  - `/calendar?view=week&date=YYYY-MM-DD`
+  - `/calendar?view=month&date=YYYY-MM-DD`
+  - `/calendar?view=year&date=YYYY-MM-DD`
+- History page at `/history` showing active, backlog, done, and deleted tasks.
+
+### Weekly planning
+
+- Weekly planning page at `/weekly-plan`.
+- Input weekly capacity by day.
+- Computes required task time for the selected week.
+- Computes buffer or shortfall between available capacity and required task time.
+- Shows time budget by quadrant.
+- Groups tasks by weekday.
+
+### Q2 focus and protection
+
+- Weekly Plan includes a **Q2 Focus** panel.
+- Highlights Q2 tasks for the selected week.
+- Warns when a Q2 task is close to deadline and may become Q1.
+
+### Energy-aware picking
+
+- Each task has an energy level:
+  - `low`
+  - `medium`
+  - `high`
+- Dashboard suggests tasks based on the selected current energy level.
+
+### Notifications
+
+- Deadline notifications are intentionally **not** embedded in the main Matrix dashboard.
+- A bell button `🔔` in the navigation opens the dedicated Notifications page at `/notifications`.
+- Notifications are grouped into:
   - overdue tasks
   - tasks due today
   - tasks due tomorrow / within 1 day
-- SQLite storage
-- Pytest test suite
+- Notification task links jump back to the relevant Matrix quadrant.
 
 ## Project structure
 
@@ -37,13 +91,15 @@ The app is designed for small VPS deployments: minimal dependencies, no database
 .
 ├── app/
 │   ├── __init__.py
-│   ├── core.py          # SQLite schema, auth helpers, task CRUD, notifications
-│   └── main.py          # FastAPI routes and app factory
+│   ├── core.py              # SQLite schema, auth helpers, task CRUD, planning, notifications
+│   └── main.py              # FastAPI routes and app factory
 ├── static/
-│   └── styles.css       # UI styles
+│   └── styles.css           # UI styles
 ├── templates/
 │   ├── login.html
-│   ├── dashboard.html
+│   ├── dashboard.html       # Main Matrix page
+│   ├── weekly_plan.html     # Weekly planning + Q2 focus
+│   ├── notifications.html   # Dedicated deadline notification page
 │   ├── calendar.html
 │   ├── history.html
 │   └── settings.html
@@ -52,6 +108,7 @@ The app is designed for small VPS deployments: minimal dependencies, no database
 │   └── test_app.py
 ├── requirements.txt
 ├── .env.example
+├── LICENSE
 └── README.md
 ```
 
@@ -118,6 +175,16 @@ Open:
 http://127.0.0.1:8090/
 ```
 
+## Main routes
+
+- `/login` — login page
+- `/` — Matrix dashboard
+- `/weekly-plan` — weekly capacity planning and Q2 protection
+- `/notifications` — dedicated deadline notification page
+- `/calendar` — deadline calendar
+- `/history` — active/done/deleted task history
+- `/settings` — in-app credential update page
+
 ## Running tests
 
 ```bash
@@ -128,8 +195,22 @@ pytest tests -q
 Expected current result:
 
 ```text
-19 passed
+26 passed
 ```
+
+The test suite covers:
+
+- authentication and logout flow
+- task creation, move, toggle, soft delete
+- direct quadrant quick-add
+- calendar views
+- history page
+- settings credential rotation
+- weekly planning capacity/buffer calculations
+- Q2 focus/protection warnings
+- energy-aware suggestions
+- dedicated Notifications page and bell navigation
+- template readability for non-root systemd service users
 
 ## Production deployment on Ubuntu with systemd
 
@@ -243,6 +324,16 @@ curl -I http://127.0.0.1:8090/
 
 A `303` redirect to `/login` means the app is running.
 
+### 7. Verify new template permissions
+
+When adding new templates/static files on a server where the app runs as a non-root service user, make sure files are readable by the service:
+
+```bash
+cd /opt/eisenhower-task
+sudo chmod 0644 templates/*.html static/*.css app/*.py
+sudo ./.venv/bin/python -m pytest tests/test_app.py::test_templates_are_readable_by_service_user -q
+```
+
 ## Nginx reverse proxy
 
 ### Option A: Simple reverse proxy
@@ -316,6 +407,7 @@ Without HTTPS, passwords are sent over plain HTTP. Use SSH tunnel or HTTPS for l
 cd /opt/eisenhower-task
 sudo git pull
 sudo ./.venv/bin/pip install -r requirements.txt
+sudo chmod 0644 templates/*.html static/*.css app/*.py
 sudo systemctl restart eisenhower-task.service
 sudo systemctl status eisenhower-task.service
 ```
@@ -359,6 +451,7 @@ After you change username/password in-app, the database becomes the source of tr
 - Use HTTPS if the app is reachable over the public Internet.
 - Consider nginx Basic Auth as an extra layer.
 - Keep the backend bound to `127.0.0.1` and expose only nginx publicly.
+- Public HTTP over an IP address is not encrypted; use HTTPS or a private tunnel for long-term usage.
 
 ## License
 
