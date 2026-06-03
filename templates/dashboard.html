@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Eisenhower Matrix</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand-block">
+      <span class="logo-mark" aria-hidden="true">✦</span>
+      <div>
+        <p class="eyebrow">Personal task tracker</p>
+        <h1>Eisenhower Matrix</h1>
+        <p class="lead">Ghi nhanh, phân loại rõ: việc nào làm ngay, việc nào lên lịch, việc nào nên bỏ qua.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="nav-pill active" href="/">Matrix</a>
+      <a class="nav-pill" href="/calendar">Calendar</a>
+      <a class="nav-pill" href="/history">History</a>
+      <a class="nav-pill" href="/settings">Settings</a>
+      <form method="post" action="/logout">
+        <button class="secondary" type="submit">Đăng xuất {{ username }}</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="overview" aria-label="Tổng quan task">
+    <a class="stat-card urgent-stat" href="#q1">
+      <span class="stat-label">Làm ngay</span>
+      <strong>{{ counts['q1'] }}</strong>
+      <small>Quan trọng + khẩn cấp</small>
+    </a>
+    <a class="stat-card schedule-stat" href="#q2">
+      <span class="stat-label">Lên lịch</span>
+      <strong>{{ counts['q2'] }}</strong>
+      <small>Quan trọng, chưa khẩn cấp</small>
+    </a>
+    <a class="stat-card delegate-stat" href="#q3">
+      <span class="stat-label">Xử lý nhanh</span>
+      <strong>{{ counts['q3'] }}</strong>
+      <small>Khẩn cấp, ít quan trọng</small>
+    </a>
+    <a class="stat-card low-stat" href="#q4">
+      <span class="stat-label">Backlog thấp</span>
+      <strong>{{ counts['q4'] }}</strong>
+      <small>Không quan trọng / không gấp</small>
+    </a>
+  </section>
+
+  <section class="new-task notification-panel {% if notification_count == 0 %}quiet-notifications{% endif %}" aria-label="Thông báo deadline">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Notifications</p>
+        <h2>Thông báo deadline</h2>
+      </div>
+      <span class="hint-pill">{{ notification_count }} task cần chú ý</span>
+    </div>
+    {% if notification_count %}
+    <div class="notification-grid">
+      <div class="notification-column overdue-note">
+        <h3>Hết hạn</h3>
+        {% for task in notifications['overdue'] %}
+        <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>Deadline: {{ task.due_date }} · {{ quadrants[task.quadrant].title }}</small></a>
+        {% else %}<p>Không có task quá hạn.</p>{% endfor %}
+      </div>
+      <div class="notification-column today-note">
+        <h3>Hôm nay đến hạn</h3>
+        {% for task in notifications['today'] %}
+        <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>Deadline: {{ task.due_date }} · {{ quadrants[task.quadrant].title }}</small></a>
+        {% else %}<p>Không có task đến hạn hôm nay.</p>{% endfor %}
+      </div>
+      <div class="notification-column tomorrow-note">
+        <h3>Sắp hết hạn trong 1 ngày</h3>
+        {% for task in notifications['tomorrow'] %}
+        <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>Deadline: {{ task.due_date }} · {{ quadrants[task.quadrant].title }}</small></a>
+        {% else %}<p>Không có task đến hạn ngày mai.</p>{% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <p>Không có task quá hạn, đến hạn hôm nay hoặc sắp hết hạn trong 1 ngày.</p>
+    {% endif %}
+  </section>
+
+  <section class="new-task">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Quick add</p>
+        <h2>Thêm task mới</h2>
+      </div>
+      <span class="hint-pill">Tick 2 ô để app tự xếp quadrant</span>
+    </div>
+    <form method="post" action="/tasks" class="task-form">
+      <label class="wide">Tiêu đề
+        <input name="title" placeholder="VD: Việc cần làm tiếp theo" required>
+      </label>
+      <label>Deadline
+        <input name="due_date" type="date">
+      </label>
+      <label>Thời gian thực hiện (phút)
+        <input name="duration_minutes" type="number" min="0" step="1" placeholder="VD: 45">
+      </label>
+      <label class="wide">Ghi chú
+        <textarea name="description" rows="2" placeholder="Mô tả ngắn, link, bối cảnh..."></textarea>
+      </label>
+      <div class="checks">
+        <label><input type="checkbox" name="important"> Quan trọng</label>
+        <label><input type="checkbox" name="urgent"> Khẩn cấp</label>
+      </div>
+      <button type="submit">Log task</button>
+    </form>
+  </section>
+
+  <main class="matrix">
+    {% for key, quadrant in quadrants.items() %}
+    <section class="quadrant {{ key }}" id="{{ key }}">
+      <div class="quadrant-head">
+        <div>
+          <span class="quadrant-kicker">{{ key | upper }}</span>
+          <h2>{{ quadrant.title }}</h2>
+          <p>{{ quadrant.subtitle }}</p>
+        </div>
+        <span class="count">{{ counts[key] }}</span>
+      </div>
+      <details class="quick-add-quadrant">
+        <summary aria-label="Thêm task trực tiếp vào {{ quadrant.title }}">＋ Thêm nhanh {{ key | upper }}</summary>
+        <form method="post" action="/tasks" class="quick-add-form">
+          <input type="hidden" name="quadrant" value="{{ key }}">
+          <input name="title" placeholder="Task mới cho {{ key | upper }}" required>
+          <input name="duration_minutes" type="number" min="0" step="1" placeholder="Phút">
+          <button class="small" type="submit">Thêm</button>
+        </form>
+      </details>
+      <div class="tasks">
+        {% for task in tasks_by_quadrant[key] %}
+        <article class="task {% if task.done %}done{% endif %}">
+          <div class="task-main">
+            <h3>{{ task.title }}</h3>
+            {% if task.description %}<p>{{ task.description }}</p>{% endif %}
+            <div class="task-meta">
+              {% if task.due_date %}<small class="due-date">📅 Deadline: {{ task.due_date }}</small>{% endif %}
+              {% if task.duration_minutes %}<small class="duration">⏱ {{ task.duration_minutes }} phút</small>{% endif %}
+            </div>
+          </div>
+          <div class="task-actions">
+            <form method="post" action="/tasks/{{ task.id }}/toggle">
+              <input type="hidden" name="done" value="{{ 'false' if task.done else 'true' }}">
+              <button class="small" type="submit">{{ 'Mở lại' if task.done else 'Xong' }}</button>
+            </form>
+            <form method="post" action="/tasks/{{ task.id }}/move">
+              <select name="quadrant" aria-label="Chuyển quadrant" onchange="this.form.submit()">
+                {% for move_key, move_q in quadrants.items() %}
+                <option value="{{ move_key }}" {% if move_key == task.quadrant %}selected{% endif %}>{{ move_q.title }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            <form method="post" action="/tasks/{{ task.id }}/delete" onsubmit="return confirm('Xoá task này?')">
+              <button class="small danger" type="submit">Xoá</button>
+            </form>
+          </div>
+        </article>
+        {% else %}
+        <div class="empty">
+          <span>＋</span>
+          <p>Chưa có task phù hợp. Thêm task ở form phía trên.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </main>
+</div>
+</body>
+</html>

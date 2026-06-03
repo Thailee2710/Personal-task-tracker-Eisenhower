@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Calendar · Eisenhower Matrix</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand-block">
+      <span class="logo-mark" aria-hidden="true">📅</span>
+      <div>
+        <p class="eyebrow">Deadline view</p>
+        <h1>Calendar</h1>
+        <p class="lead">Xem các task có deadline theo Ngày, Tuần, Tháng hoặc Năm.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="nav-pill" href="/">Matrix</a>
+      <a class="nav-pill active" href="/calendar">Calendar</a>
+      <a class="nav-pill" href="/history">History</a>
+      <a class="nav-pill" href="/settings">Settings</a>
+      <form method="post" action="/logout">
+        <button class="secondary" type="submit">Đăng xuất {{ username }}</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="new-task calendar-toolbar">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">{{ view_label }}</p>
+        <h2>{{ start_date }} → {{ end_date }}</h2>
+      </div>
+      <span class="hint-pill">{{ tasks|length }} task có deadline</span>
+    </div>
+    <form method="get" action="/calendar" class="calendar-filter">
+      <label>Chế độ xem
+        <select name="view">
+          <option value="day" {% if view == 'day' %}selected{% endif %}>Ngày</option>
+          <option value="week" {% if view == 'week' %}selected{% endif %}>Tuần</option>
+          <option value="month" {% if view == 'month' %}selected{% endif %}>Tháng</option>
+          <option value="year" {% if view == 'year' %}selected{% endif %}>Năm</option>
+        </select>
+      </label>
+      <label>Ngày tham chiếu
+        <input name="date" type="date" value="{{ focus_date }}">
+      </label>
+      <button type="submit">Xem calendar</button>
+    </form>
+    <div class="view-tabs" aria-label="Chọn view nhanh">
+      <a href="/calendar?view=day&date={{ focus_date }}" class="nav-pill {% if view == 'day' %}active{% endif %}">Ngày</a>
+      <a href="/calendar?view=week&date={{ focus_date }}" class="nav-pill {% if view == 'week' %}active{% endif %}">Tuần</a>
+      <a href="/calendar?view=month&date={{ focus_date }}" class="nav-pill {% if view == 'month' %}active{% endif %}">Tháng</a>
+      <a href="/calendar?view=year&date={{ focus_date }}" class="nav-pill {% if view == 'year' %}active{% endif %}">Năm</a>
+    </div>
+  </section>
+
+  {% if view == 'year' %}
+  <main class="year-grid">
+    {% for month in year_months %}
+    <section class="quadrant calendar-month-card">
+      <div class="quadrant-head">
+        <div>
+          <span class="quadrant-kicker">{{ month.date[:4] }}</span>
+          <h2>{{ month.label }}</h2>
+        </div>
+        <a class="nav-pill" href="/calendar?view=month&date={{ month.date }}">Mở tháng</a>
+      </div>
+      <div class="tasks">
+        {% set month_prefix = month.date[:7] %}
+        {% for task in tasks if task.due_date[:7] == month_prefix %}
+        <article class="task compact-task">
+          <strong>{{ task.due_date }}</strong>
+          <span>{{ task.title }}</span>
+          <small>{{ task.status_label }} · {{ quadrants[task.quadrant].title }}</small>
+        </article>
+        {% else %}
+        <div class="empty"><p>Không có deadline.</p></div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </main>
+  {% else %}
+  <main class="calendar-grid {% if view == 'day' %}calendar-day{% endif %}">
+    {% for day in month_days %}
+    {% set day_key = day.isoformat() %}
+    <section class="calendar-cell {% if day_key == focus_date %}today-cell{% endif %}">
+      <div class="calendar-cell-head">
+        <strong>{{ day_key }}</strong>
+        <small>{{ tasks_by_date.get(day_key, [])|length }} task</small>
+      </div>
+      <div class="calendar-cell-tasks">
+        {% for task in tasks_by_date.get(day_key, []) %}
+        <article class="task compact-task">
+          <span>{{ task.title }}</span>
+          <small>{{ task.status_label }} · {{ quadrants[task.quadrant].title }}</small>
+          {% if task.duration_minutes %}<small>⏱ {{ task.duration_minutes }} phút</small>{% endif %}
+        </article>
+        {% else %}
+        <p class="empty-calendar">Không có deadline.</p>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </main>
+  {% endif %}
+</div>
+</body>
+</html>

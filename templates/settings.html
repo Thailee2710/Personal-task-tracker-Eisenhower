@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Settings · Eisenhower Matrix</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand-block">
+      <span class="logo-mark" aria-hidden="true">⚙</span>
+      <div>
+        <p class="eyebrow">Account</p>
+        <h1>Settings</h1>
+        <p class="lead">Đổi thông tin đăng nhập app trực tiếp trong giao diện web.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="nav-pill" href="/">Matrix</a>
+      <a class="nav-pill" href="/calendar">Calendar</a>
+      <a class="nav-pill" href="/history">History</a>
+      <a class="nav-pill active" href="/settings">Settings</a>
+      <form method="post" action="/logout">
+        <button class="secondary" type="submit">Đăng xuất {{ username }}</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="new-task settings-card">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Security</p>
+        <h2>Đổi username/password</h2>
+      </div>
+      <span class="hint-pill">User hiện tại: {{ username }}</span>
+    </div>
+
+    {% if updated %}
+    <div class="success">Đã cập nhật username/password. Session hiện tại đã được làm mới.</div>
+    {% endif %}
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/settings/credentials" class="task-form settings-form">
+      <label>Username mới
+        <input name="new_username" value="{{ username }}" required autocomplete="username">
+      </label>
+      <label>Mật khẩu hiện tại
+        <input name="current_password" type="password" required autocomplete="current-password">
+      </label>
+      <label>Mật khẩu mới
+        <input name="new_password" type="password" minlength="8" required autocomplete="new-password">
+      </label>
+      <label>Xác nhận mật khẩu mới
+        <input name="confirm_password" type="password" minlength="8" required autocomplete="new-password">
+      </label>
+      <button type="submit">Cập nhật đăng nhập</button>
+    </form>
+  </section>
+</div>
+</body>
+</html>
