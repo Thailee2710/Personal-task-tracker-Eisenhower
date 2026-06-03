@@ -68,8 +68,8 @@ The app is designed for small VPS deployments: minimal dependencies, no database
 Clone the repository:
 
 ```bash
-git clone https://github.com/Thailee2710/Personal-task-tracker-Eisenhower-.git
-cd Personal-task-tracker-Eisenhower-
+git clone https://github.com/Thailee2710/Personal-task-tracker-Eisenhower.git
+cd Personal-task-tracker-Eisenhower
 ```
 
 Create a virtual environment:
@@ -151,7 +151,7 @@ sudo chown root:root /opt/eisenhower-task
 ### 3. Clone the app
 
 ```bash
-sudo git clone https://github.com/Thailee2710/Personal-task-tracker-Eisenhower-.git /opt/eisenhower-task
+sudo git clone https://github.com/Thailee2710/Personal-task-tracker-Eisenhower.git /opt/eisenhower-task
 cd /opt/eisenhower-task
 ```
 
