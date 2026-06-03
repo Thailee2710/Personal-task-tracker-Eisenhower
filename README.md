@@ -21,6 +21,8 @@ The app is designed for small VPS deployments: minimal dependencies, no database
 - Mark tasks done / reopen
 - Soft delete: deleted tasks disappear from the dashboard but remain in History
 - Calendar views for deadlines: day, week, month, year
+- Weekly planning page with capacity input, required time, buffer/shortfall, and quadrant time budget
+- Energy level per task (`low` / `medium` / `high`) with dashboard suggestions based on current energy
 - History page for all tasks: active, backlog, done, deleted
 - Deadline notification panel on the dashboard:
   - overdue tasks

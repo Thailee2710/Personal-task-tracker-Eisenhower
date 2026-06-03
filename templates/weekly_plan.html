@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Weekly Planning · Eisenhower Matrix</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand-block">
+      <span class="logo-mark" aria-hidden="true">🗓️</span>
+      <div>
+        <p class="eyebrow">Capacity planning</p>
+        <h1>Weekly Planning</h1>
+        <p class="lead">Ước lượng tổng thời gian task, nhập khung giờ làm việc khả dụng và giữ buffer cho việc phát sinh.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="nav-pill" href="/">Matrix</a>
+      <a class="nav-pill active" href="/weekly-plan?week_start={{ plan.week_start }}">Weekly Plan</a>
+      <a class="nav-pill" href="/calendar">Calendar</a>
+      <a class="nav-pill" href="/history">History</a>
+      <a class="nav-pill" href="/settings">Settings</a>
+      <form method="post" action="/logout">
+        <button class="secondary" type="submit">Đăng xuất {{ username }}</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="overview">
+    <div class="stat-card schedule-stat">
+      <span class="stat-label">Required</span>
+      <strong>{{ plan.required_label }}</strong>
+      <small>Tổng thời lượng task trong tuần</small>
+    </div>
+    <div class="stat-card delegate-stat">
+      <span class="stat-label">Available</span>
+      <strong>{{ plan.available_label }}</strong>
+      <small>Thời gian làm việc bạn nhập</small>
+    </div>
+    <div class="stat-card {% if plan.has_shortfall %}urgent-stat{% else %}schedule-stat{% endif %}">
+      <span class="stat-label">{{ 'Shortfall' if plan.has_shortfall else 'Buffer' }}</span>
+      <strong>{{ plan.buffer_label }}</strong>
+      <small>{{ 'Cần cắt bớt Q4/Q3 hoặc tăng capacity' if plan.has_shortfall else 'Khoảng dự phòng cho việc phát sinh' }}</small>
+    </div>
+    <div class="stat-card low-stat">
+      <span class="stat-label">Week</span>
+      <strong>{{ plan.tasks|length }}</strong>
+      <small>{{ plan.week_start }} → {{ plan.week_end }}</small>
+    </div>
+  </section>
+
+  <section class="new-task">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Weekly capacity</p>
+        <h2>Nhập thời gian làm việc khả dụng</h2>
+      </div>
+      <span class="hint-pill">Đơn vị: phút</span>
+    </div>
+    <form method="post" action="/weekly-plan/capacity" class="capacity-form">
+      <input type="hidden" name="week_start" value="{{ plan.week_start }}">
+      {% for day in plan.days %}
+      <label>{{ day }}
+        <input name="{{ day }}" type="number" min="0" step="15" value="{{ plan.capacity_by_day[day] }}">
+      </label>
+      {% endfor %}
+      <button type="submit">Lưu capacity tuần</button>
+    </form>
+  </section>
+
+  <section class="new-task">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Quadrant budget</p>
+        <h2>Phân bổ thời gian theo ma trận</h2>
+      </div>
+      <span class="hint-pill">Bảo vệ Q2 trước khi nó thành Q1</span>
+    </div>
+    <div class="quadrant-budget">
+      {% for key, quadrant in quadrants.items() %}
+      <div class="budget-card {{ key }}">
+        <span class="quadrant-kicker">{{ key | upper }}</span>
+        <strong>{{ plan.quadrant_labels[key] }}</strong>
+        <small>{{ quadrant.title }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <main class="weekly-grid">
+    {% for day in plan.days %}
+    <section class="calendar-cell">
+      <div class="calendar-cell-head">
+        <strong>{{ day }}</strong>
+        <small>{{ plan.tasks_by_day[day]|length }} task · {{ plan.capacity_by_day[day]|minutes }} available</small>
+      </div>
+      <div class="calendar-cell-tasks">
+        {% for task in plan.tasks_by_day[day] %}
+        <article class="task compact-task">
+          <span>{{ task.title }}</span>
+          <small>{{ quadrants[task.quadrant].title }} · {{ task.duration_minutes|minutes }} · energy {{ task.energy_level }}</small>
+        </article>
+        {% else %}
+        <p class="empty-calendar">Không có deadline.</p>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </main>
+</div>
+</body>
+</html>

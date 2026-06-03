@@ -20,12 +20,16 @@ from .core import (
     create_task,
     delete_task,
     ensure_admin_user,
+    format_minutes,
+    get_weekly_plan,
     init_db,
     list_calendar_tasks,
     list_due_notifications,
+    list_energy_suggestions,
     list_task_history,
     list_tasks_by_quadrant,
     move_task,
+    set_weekly_capacity,
     toggle_task,
     update_user_credentials,
     user_exists,
@@ -80,6 +84,15 @@ def _year_months(focus: date) -> list[dict[str, str]]:
     ]
 
 
+def _week_start(focus: date | None = None) -> date:
+    focus = focus or date.today()
+    return focus - timedelta(days=focus.weekday())
+
+
+def _minute_label_filter(minutes: int) -> str:
+    return format_minutes(int(minutes or 0))
+
+
 def _sign(value: str, secret_key: str) -> str:
     signature = hmac.new(secret_key.encode("utf-8"), value.encode("utf-8"), sha256).hexdigest()
     encoded = base64.urlsafe_b64encode(value.encode("utf-8")).decode("ascii")
@@ -111,6 +124,7 @@ def create_app(
 
     app = FastAPI(title="Eisenhower Task Logger")
     templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+    templates.env.filters["minutes"] = _minute_label_filter
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
     def current_user(request: Request) -> str | None:
@@ -160,11 +174,13 @@ def create_app(
         return response
 
     @app.get("/", response_class=HTMLResponse)
-    async def dashboard(request: Request, username: str = Depends(require_user), today: str | None = None):
+    async def dashboard(request: Request, username: str = Depends(require_user), today: str | None = None, energy: str = "medium"):
         grouped = list_tasks_by_quadrant(db_path)
         counts = {key: len([task for task in tasks if not task["done"]]) for key, tasks in grouped.items()}
         notifications = list_due_notifications(db_path, today=_parse_focus_date(today) if today else None)
         notification_count = sum(len(tasks) for tasks in notifications.values())
+        energy = energy if energy in {"low", "medium", "high"} else "medium"
+        energy_suggestions = list_energy_suggestions(db_path, energy_level=energy)
         return templates.TemplateResponse(
             request,
             "dashboard.html",
@@ -175,8 +191,34 @@ def create_app(
                 "counts": counts,
                 "notifications": notifications,
                 "notification_count": notification_count,
+                "selected_energy": energy,
+                "energy_suggestions": energy_suggestions,
             },
         )
+
+    @app.get("/weekly-plan", response_class=HTMLResponse)
+    async def weekly_plan_page(
+        request: Request,
+        username: str = Depends(require_user),
+        week_start: str | None = None,
+    ):
+        start = _parse_focus_date(week_start) if week_start else _week_start()
+        plan = get_weekly_plan(db_path, week_start=start.isoformat())
+        return templates.TemplateResponse(
+            request,
+            "weekly_plan.html",
+            {"username": username, "plan": plan, "quadrants": QUADRANTS},
+        )
+
+    @app.post("/weekly-plan/capacity")
+    async def update_weekly_capacity(request: Request, username: str = Depends(require_user)):
+        form = await request.form()
+        raw_week_start = str(form.get("week_start") or _week_start().isoformat())
+        start = _parse_focus_date(raw_week_start)
+        days = [(start + timedelta(days=offset)).isoformat() for offset in range(7)]
+        daily_minutes = {day: str(form.get(day) or 0) for day in days}
+        set_weekly_capacity(db_path, week_start=start.isoformat(), daily_minutes=daily_minutes)
+        return RedirectResponse(f"/weekly-plan?week_start={start.isoformat()}", status_code=303)
 
     @app.get("/calendar", response_class=HTMLResponse)
     async def calendar_page(
@@ -283,6 +325,7 @@ def create_app(
         description: str = Form(""),
         due_date: str = Form(""),
         duration_minutes: str = Form(""),
+        energy_level: str = Form("medium"),
         important: str | None = Form(None),
         urgent: str | None = Form(None),
         quadrant: str | None = Form(None),
@@ -294,6 +337,7 @@ def create_app(
             description=description,
             due_date=due_date,
             duration_minutes=duration_minutes,
+            energy_level=energy_level,
             quadrant=selected_quadrant,
         )
         return RedirectResponse("/", status_code=303)

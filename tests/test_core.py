@@ -13,7 +13,10 @@ from app.core import (
     list_due_notifications,
     list_task_history,
     list_tasks_by_quadrant,
+    get_weekly_plan,
+    list_energy_suggestions,
     move_task,
+    set_weekly_capacity,
     toggle_task,
     update_user_credentials,
 )
@@ -50,12 +53,14 @@ def test_create_list_move_toggle_delete_task(tmp_path):
         description="Chuẩn bị bản nháp đầu tiên",
         due_date="2026-06-05",
         duration_minutes=90,
+        energy_level="high",
     )
 
     task = get_task(db_path, task_id)
     assert task["title"] == "Viết proposal khách hàng"
     assert task["quadrant"] == "q2"
     assert task["duration_minutes"] == 90
+    assert task["energy_level"] == "high"
     assert task["done"] is False
 
     grouped = list_tasks_by_quadrant(db_path)
@@ -145,3 +150,46 @@ def test_due_notifications_classify_tomorrow_today_and_overdue(tmp_path):
     assert [task["title"] for task in notifications["overdue"]] == ["Hết hạn hôm qua"]
     assert [task["title"] for task in notifications["today"]] == ["Đến hạn hôm nay"]
     assert [task["title"] for task in notifications["tomorrow"]] == ["Sắp hết hạn mai"]
+
+
+def test_weekly_plan_sums_capacity_task_time_and_quadrants(tmp_path):
+    db_path = tmp_path / "tasks.sqlite"
+    init_db(db_path)
+    create_task(db_path, title="Deep Q2", quadrant="q2", due_date="2026-06-03", duration_minutes=120)
+    create_task(db_path, title="Fire Q1", quadrant="q1", due_date="2026-06-04", duration_minutes=45)
+    create_task(db_path, title="Outside week", quadrant="q4", due_date="2026-06-12", duration_minutes=999)
+    done_id = create_task(db_path, title="Done in week", quadrant="q3", due_date="2026-06-05", duration_minutes=30)
+    delete_id = create_task(db_path, title="Deleted in week", quadrant="q2", due_date="2026-06-06", duration_minutes=30)
+    toggle_task(db_path, done_id, done=True)
+    delete_task(db_path, delete_id)
+    set_weekly_capacity(
+        db_path,
+        week_start="2026-06-01",
+        daily_minutes={"2026-06-01": 60, "2026-06-02": 120, "2026-06-03": 180},
+    )
+
+    plan = get_weekly_plan(db_path, week_start="2026-06-01")
+
+    assert plan["week_start"] == "2026-06-01"
+    assert plan["week_end"] == "2026-06-07"
+    assert plan["required_minutes"] == 165
+    assert plan["available_minutes"] == 360
+    assert plan["buffer_minutes"] == 195
+    assert plan["quadrant_minutes"] == {"q1": 45, "q2": 120, "q3": 0, "q4": 0}
+    assert [task["title"] for task in plan["tasks_by_day"]["2026-06-03"]] == ["Deep Q2"]
+
+
+def test_energy_suggestions_prioritize_matching_unfinished_tasks(tmp_path):
+    db_path = tmp_path / "tasks.sqlite"
+    init_db(db_path)
+    create_task(db_path, title="Low admin", quadrant="q3", duration_minutes=15, energy_level="low")
+    create_task(db_path, title="Deep work", quadrant="q2", duration_minutes=120, energy_level="high")
+    create_task(db_path, title="Medium task", quadrant="q1", duration_minutes=60, energy_level="medium")
+    done_id = create_task(db_path, title="Done low", quadrant="q3", duration_minutes=10, energy_level="low")
+    toggle_task(db_path, done_id, done=True)
+
+    low = list_energy_suggestions(db_path, energy_level="low")
+    high = list_energy_suggestions(db_path, energy_level="high")
+
+    assert [task["title"] for task in low] == ["Low admin"]
+    assert [task["title"] for task in high] == ["Deep work"]

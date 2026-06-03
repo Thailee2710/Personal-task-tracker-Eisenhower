@@ -73,6 +73,15 @@ def init_db(db_path: str | Path) -> None:
                 updated_at TEXT NOT NULL,
                 CHECK (quadrant IN ('q1', 'q2', 'q3', 'q4'))
             );
+            CREATE TABLE IF NOT EXISTS weekly_capacity (
+                id INTEGER PRIMARY KEY,
+                week_start TEXT NOT NULL,
+                day_date TEXT NOT NULL,
+                available_minutes INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(week_start, day_date)
+            );
             CREATE INDEX IF NOT EXISTS idx_tasks_quadrant_done_updated
                 ON tasks(quadrant, done, updated_at DESC);
             """
@@ -82,6 +91,8 @@ def init_db(db_path: str | Path) -> None:
             conn.execute("ALTER TABLE tasks ADD COLUMN duration_minutes INTEGER NOT NULL DEFAULT 0")
         if "deleted_at" not in columns:
             conn.execute("ALTER TABLE tasks ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''")
+        if "energy_level" not in columns:
+            conn.execute("ALTER TABLE tasks ADD COLUMN energy_level TEXT NOT NULL DEFAULT 'medium'")
 
 
 def hash_password(password: str, *, salt: bytes | None = None) -> str:
@@ -193,6 +204,13 @@ def normalize_duration_minutes(value: int | str | None) -> int:
     return minutes
 
 
+def normalize_energy_level(value: str | None) -> str:
+    value = (value or "medium").strip().lower()
+    if value not in {"low", "medium", "high"}:
+        raise ValueError("Energy level must be low, medium, or high")
+    return value
+
+
 def create_task(
     db_path: str | Path,
     *,
@@ -201,20 +219,22 @@ def create_task(
     description: str = "",
     due_date: str = "",
     duration_minutes: int | str | None = 0,
+    energy_level: str | None = "medium",
 ) -> int:
     validate_quadrant(quadrant)
     title = title.strip()
     if not title:
         raise ValueError("Title must not be empty")
     duration = normalize_duration_minutes(duration_minutes)
+    energy = normalize_energy_level(energy_level)
     timestamp = now_iso()
     with connect(db_path) as conn:
         cur = conn.execute(
             """
-            INSERT INTO tasks(title, description, quadrant, due_date, duration_minutes, done, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+            INSERT INTO tasks(title, description, quadrant, due_date, duration_minutes, energy_level, done, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
             """,
-            (title, description.strip(), quadrant, due_date.strip(), duration, timestamp, timestamp),
+            (title, description.strip(), quadrant, due_date.strip(), duration, energy, timestamp, timestamp),
         )
         return int(cur.lastrowid)
 
@@ -301,6 +321,127 @@ def list_due_notifications(db_path: str | Path, *, today: str | date | None = No
         elif task["due_date"] == tomorrow.isoformat():
             grouped["tomorrow"].append(task)
     return grouped
+
+
+def _parse_iso_date(value: str) -> date:
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def _week_bounds(week_start: str | date) -> tuple[date, date]:
+    start = week_start if isinstance(week_start, date) else _parse_iso_date(week_start)
+    return start, start + timedelta(days=6)
+
+
+def format_minutes(minutes: int) -> str:
+    sign = "-" if minutes < 0 else ""
+    minutes = abs(minutes)
+    hours, mins = divmod(minutes, 60)
+    if hours and mins:
+        return f"{sign}{hours}h {mins}m"
+    if hours:
+        return f"{sign}{hours}h"
+    return f"{sign}{mins}m"
+
+
+def set_weekly_capacity(db_path: str | Path, *, week_start: str, daily_minutes: dict[str, int | str]) -> None:
+    start, end = _week_bounds(week_start)
+    timestamp = now_iso()
+    with connect(db_path) as conn:
+        for day, raw_minutes in daily_minutes.items():
+            day_date = _parse_iso_date(day)
+            if day_date < start or day_date > end:
+                continue
+            minutes = normalize_duration_minutes(raw_minutes)
+            conn.execute(
+                """
+                INSERT INTO weekly_capacity(week_start, day_date, available_minutes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(week_start, day_date)
+                DO UPDATE SET available_minutes = excluded.available_minutes, updated_at = excluded.updated_at
+                """,
+                (start.isoformat(), day_date.isoformat(), minutes, timestamp, timestamp),
+            )
+
+
+def get_weekly_plan(db_path: str | Path, *, week_start: str) -> dict[str, Any]:
+    start, end = _week_bounds(week_start)
+    days = [(start + timedelta(days=offset)).isoformat() for offset in range(7)]
+    with connect(db_path) as conn:
+        task_rows = conn.execute(
+            """
+            SELECT * FROM tasks
+            WHERE deleted_at = ''
+              AND done = 0
+              AND due_date >= ?
+              AND due_date <= ?
+            ORDER BY due_date ASC, quadrant ASC, updated_at DESC, id DESC
+            """,
+            (start.isoformat(), end.isoformat()),
+        ).fetchall()
+        capacity_rows = conn.execute(
+            """
+            SELECT day_date, available_minutes FROM weekly_capacity
+            WHERE week_start = ?
+            ORDER BY day_date ASC
+            """,
+            (start.isoformat(),),
+        ).fetchall()
+    capacities = {day: 0 for day in days}
+    capacities.update({row["day_date"]: int(row["available_minutes"]) for row in capacity_rows})
+    tasks_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in days}
+    quadrant_minutes = {key: 0 for key in QUADRANTS}
+    tasks: list[dict[str, Any]] = []
+    for row in task_rows:
+        task = row_to_task(row)
+        if task is None:
+            continue
+        tasks.append(task)
+        tasks_by_day[task["due_date"]].append(task)
+        quadrant_minutes[task["quadrant"]] += int(task.get("duration_minutes") or 0)
+    required_minutes = sum(quadrant_minutes.values())
+    available_minutes = sum(capacities.values())
+    buffer_minutes = available_minutes - required_minutes
+    return {
+        "week_start": start.isoformat(),
+        "week_end": end.isoformat(),
+        "days": days,
+        "tasks": tasks,
+        "tasks_by_day": tasks_by_day,
+        "capacity_by_day": capacities,
+        "required_minutes": required_minutes,
+        "available_minutes": available_minutes,
+        "buffer_minutes": buffer_minutes,
+        "required_label": format_minutes(required_minutes),
+        "available_label": format_minutes(available_minutes),
+        "buffer_label": format_minutes(buffer_minutes),
+        "quadrant_minutes": quadrant_minutes,
+        "quadrant_labels": {key: format_minutes(minutes) for key, minutes in quadrant_minutes.items()},
+        "has_shortfall": buffer_minutes < 0,
+    }
+
+
+def list_energy_suggestions(db_path: str | Path, *, energy_level: str, limit: int = 6) -> list[dict[str, Any]]:
+    energy = normalize_energy_level(energy_level)
+    preferred_quadrants = {
+        "low": ("q3", "q1", "q2", "q4"),
+        "medium": ("q1", "q2", "q3", "q4"),
+        "high": ("q2", "q1", "q3", "q4"),
+    }[energy]
+    order_case = " ".join(f"WHEN '{quadrant}' THEN {index}" for index, quadrant in enumerate(preferred_quadrants))
+    with connect(db_path) as conn:
+        rows = conn.execute(
+            f"""
+            SELECT * FROM tasks
+            WHERE deleted_at = ''
+              AND done = 0
+              AND energy_level = ?
+            ORDER BY CASE quadrant {order_case} ELSE 9 END,
+                     due_date = '' ASC, due_date ASC, duration_minutes ASC, updated_at DESC, id DESC
+            LIMIT ?
+            """,
+            (energy, limit),
+        ).fetchall()
+    return [task for row in rows if (task := row_to_task(row)) is not None]
 
 
 def move_task(db_path: str | Path, task_id: int, quadrant: str) -> None:

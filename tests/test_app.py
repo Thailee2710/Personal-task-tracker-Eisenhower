@@ -214,3 +214,47 @@ def test_dashboard_shows_due_notification_sections(tmp_path):
     assert "Hết hạn hôm qua" in dashboard.text
     assert "Đến hạn hôm nay" in dashboard.text
     assert "Sắp hết hạn mai" in dashboard.text
+
+
+def test_weekly_plan_page_updates_capacity_and_shows_buffer(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/login", data={"username": "admin", "password": "secret-pass"})
+    client.post("/tasks", data={"title": "Deep Q2", "quadrant": "q2", "due_date": "2026-06-03", "duration_minutes": "120"})
+    client.post("/tasks", data={"title": "Fire Q1", "quadrant": "q1", "due_date": "2026-06-04", "duration_minutes": "45"})
+
+    initial = client.get("/weekly-plan?week_start=2026-06-01")
+    assert initial.status_code == 200
+    assert "Weekly Planning" in initial.text
+    assert "Deep Q2" in initial.text
+    assert "2h 45m" in initial.text
+
+    updated = client.post(
+        "/weekly-plan/capacity",
+        data={
+            "week_start": "2026-06-01",
+            "2026-06-01": "60",
+            "2026-06-02": "120",
+            "2026-06-03": "180",
+        },
+        follow_redirects=False,
+    )
+    assert updated.status_code == 303
+    assert updated.headers["location"] == "/weekly-plan?week_start=2026-06-01"
+
+    weekly = client.get("/weekly-plan?week_start=2026-06-01")
+    assert "6h" in weekly.text
+    assert "Buffer" in weekly.text
+    assert "3h 15m" in weekly.text
+
+
+def test_dashboard_can_suggest_tasks_by_energy_level(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/login", data={"username": "admin", "password": "secret-pass"})
+    client.post("/tasks", data={"title": "Quick admin", "quadrant": "q3", "duration_minutes": "15", "energy_level": "low"})
+    client.post("/tasks", data={"title": "Deep strategy", "quadrant": "q2", "duration_minutes": "120", "energy_level": "high"})
+
+    dashboard = client.get("/?energy=high")
+
+    assert dashboard.status_code == 200
+    assert "Gợi ý theo năng lượng" in dashboard.text
+    assert "Deep strategy" in dashboard.text

@@ -20,6 +20,7 @@
     </div>
     <div class="top-actions">
       <a class="nav-pill active" href="/">Matrix</a>
+      <a class="nav-pill" href="/weekly-plan">Weekly Plan</a>
       <a class="nav-pill" href="/calendar">Calendar</a>
       <a class="nav-pill" href="/history">History</a>
       <a class="nav-pill" href="/settings">Settings</a>
@@ -86,6 +87,29 @@
     {% endif %}
   </section>
 
+  <section class="new-task energy-panel" aria-label="Gợi ý task theo năng lượng">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Energy-aware picking</p>
+        <h2>Gợi ý theo năng lượng</h2>
+      </div>
+      <form method="get" action="/" class="energy-filter">
+        <select name="energy" onchange="this.form.submit()">
+          <option value="low" {% if selected_energy == 'low' %}selected{% endif %}>Năng lượng thấp</option>
+          <option value="medium" {% if selected_energy == 'medium' %}selected{% endif %}>Năng lượng vừa</option>
+          <option value="high" {% if selected_energy == 'high' %}selected{% endif %}>Năng lượng cao</option>
+        </select>
+      </form>
+    </div>
+    <div class="suggestion-list">
+      {% for task in energy_suggestions %}
+      <a href="#{{ task.quadrant }}" class="notification-item"><strong>{{ task.title }}</strong><small>{{ quadrants[task.quadrant].title }} · {{ task.duration_minutes|minutes }} · năng lượng {{ task.energy_level }}</small></a>
+      {% else %}
+      <p>Chưa có task phù hợp với mức năng lượng này.</p>
+      {% endfor %}
+    </div>
+  </section>
+
   <section class="new-task">
     <div class="section-title">
       <div>
@@ -103,6 +127,13 @@
       </label>
       <label>Thời gian thực hiện (phút)
         <input name="duration_minutes" type="number" min="0" step="1" placeholder="VD: 45">
+      </label>
+      <label>Mức năng lượng
+        <select name="energy_level">
+          <option value="low">Thấp</option>
+          <option value="medium" selected>Vừa</option>
+          <option value="high">Cao / deep work</option>
+        </select>
       </label>
       <label class="wide">Ghi chú
         <textarea name="description" rows="2" placeholder="Mô tả ngắn, link, bối cảnh..."></textarea>
@@ -132,6 +163,11 @@
           <input type="hidden" name="quadrant" value="{{ key }}">
           <input name="title" placeholder="Task mới cho {{ key | upper }}" required>
           <input name="duration_minutes" type="number" min="0" step="1" placeholder="Phút">
+          <select name="energy_level" aria-label="Mức năng lượng">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
           <button class="small" type="submit">Thêm</button>
         </form>
       </details>
