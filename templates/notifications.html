@@ -11,18 +11,18 @@
 <div class="shell">
   <header class="topbar">
     <div class="brand-block">
-      <span class="logo-mark" aria-hidden="true">🔔</span>
+      <img class="brand-icon" src="/static/project-icon.svg" alt="Project icon">
       <div>
         <p class="eyebrow">Deadline center</p>
         <h1>Notifications</h1>
         <p class="lead">Trang riêng cho các task quá hạn, đến hạn hôm nay và sắp hết hạn trong 1 ngày.</p>
       </div>
     </div>
-    <div class="top-actions">
+    <div class="top-actions fixed-actions">
       <a class="nav-pill" href="/">Matrix</a>
       <a class="nav-pill" href="/weekly-plan">Weekly Plan</a>
       <a class="nav-pill" href="/calendar">Calendar</a>
-      <a class="nav-pill active notification-bell" href="/notifications{% if today %}?today={{ today }}{% endif %}" title="Notifications" aria-label="Notifications">🔔{% if notification_count %}<span class="bell-count">{{ notification_count }}</span>{% endif %}</a>
+      <a class="nav-pill active notification-bell" href="/notifications{% if today %}?today={{ today }}{% endif %}" title="Notifications" aria-label="Notifications">🔔<span class="sr-only">Notifications</span>{% if notification_count %}<span class="bell-count">{{ notification_count }}</span>{% endif %}</a>
       <a class="nav-pill" href="/history">History</a>
       <a class="nav-pill" href="/settings">Settings</a>
       <form method="post" action="/logout">

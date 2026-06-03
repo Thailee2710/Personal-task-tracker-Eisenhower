@@ -30,27 +30,41 @@ def test_templates_are_readable_by_service_user():
 def test_project_signature_asset_is_readable_and_documented():
     root = Path(__file__).resolve().parents[1]
     signature = root / "static" / "signature.svg"
+    icon = root / "static" / "project-icon.svg"
     readme = root / "README.md"
 
     assert signature.exists()
     assert signature.stat().st_mode & stat.S_IROTH
     assert "Project signature" in signature.read_text(encoding="utf-8")
+    assert icon.exists()
+    assert icon.stat().st_mode & stat.S_IROTH
+    assert "Project icon" in icon.read_text(encoding="utf-8")
     assert "![Project signature](static/signature.svg)" in readme.read_text(encoding="utf-8")
 
 
-def test_login_and_dashboard_show_project_signature(tmp_path):
+def test_login_and_all_app_pages_use_shared_project_icon_and_stable_nav(tmp_path):
     client = make_client(tmp_path)
 
     login = client.get("/login")
     assert login.status_code == 200
-    assert 'src="/static/signature.svg"' in login.text
-    assert 'alt="Project signature"' in login.text
+    assert 'src="/static/project-icon.svg"' in login.text
+    assert 'alt="Project icon"' in login.text
+    assert 'src="/static/signature.svg"' not in login.text
 
     client.post("/login", data={"username": "admin", "password": "secret-pass"})
-    dashboard = client.get("/")
-    assert dashboard.status_code == 200
-    assert 'src="/static/signature.svg"' in dashboard.text
-    assert 'alt="Project signature"' in dashboard.text
+    pages = ["/", "/weekly-plan", "/calendar", "/notifications", "/history", "/settings"]
+    expected_nav = ["Matrix", "Weekly Plan", "Calendar", "Notifications", "History", "Settings", "Đăng xuất admin"]
+    for path in pages:
+        response = client.get(path)
+        assert response.status_code == 200
+        assert 'src="/static/project-icon.svg"' in response.text
+        assert 'alt="Project icon"' in response.text
+        assert 'class="top-actions fixed-actions"' in response.text
+        nav_start = response.text.index('<div class="top-actions fixed-actions">')
+        nav_end = response.text.index("</div>", nav_start)
+        nav = response.text[nav_start:nav_end]
+        positions = [nav.index(label) for label in expected_nav]
+        assert positions == sorted(positions), path
 
 
 def test_dashboard_requires_login(tmp_path):

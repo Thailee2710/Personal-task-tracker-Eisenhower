@@ -63,15 +63,13 @@ p, small { color: var(--muted); }
   padding: 22px;
 }
 .brand-block { display: flex; gap: 16px; align-items: flex-start; }
-.brand-signature-mini {
-  flex: 0 0 92px;
-  width: 92px;
-  height: 52px;
-  object-fit: cover;
-  border-radius: 16px;
-  border: 1px solid rgba(24, 24, 22, 0.10);
-  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.12);
-  background: #fff;
+.brand-icon {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  border-radius: 18px;
+  filter: drop-shadow(0 12px 22px rgba(17, 24, 39, 0.12));
 }
 .project-signature {
   display: block;
@@ -82,6 +80,25 @@ p, small { color: var(--muted); }
   box-shadow: 0 18px 44px rgba(31, 26, 18, 0.10);
 }
 .login-signature { margin-bottom: 18px; }
+.login-icon {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(17, 24, 39, 0.14));
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .logo-mark {
   display: inline-grid;
   flex: 0 0 44px;
@@ -386,24 +403,36 @@ button.danger:hover { background: #fee2e2; }
   .matrix, .task-form { grid-template-columns: 1fr; }
   .task-form .wide { grid-column: auto; }
   .topbar { align-items: flex-start; flex-direction: column; }
+  .top-actions { justify-content: start; grid-template-columns: repeat(3, max-content); }
+  .top-actions form { grid-column: 1 / -1; justify-self: start; }
   .section-title { flex-direction: column; }
   .quick-add-form { grid-template-columns: 1fr; }
   button.secondary { width: 100%; }
 }
 @media (max-width: 560px) {
   .overview { grid-template-columns: 1fr; }
-  .brand-block { flex-direction: column; }
+  .brand-block { align-items: center; }
+  .brand-icon { flex-basis: 52px; width: 52px; height: 52px; }
+  .top-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .nav-pill { width: 100%; }
   .login-card, .new-task, .quadrant { border-radius: 20px; }
   .login-card { padding: 24px; }
 }
 
 .top-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(6, max-content);
+  justify-content: end;
+  justify-items: stretch;
   gap: 8px;
   align-items: center;
 }
+.top-actions form {
+  grid-column: 1 / -1;
+  justify-self: end;
+  margin: 0;
+}
+.fixed-actions { min-width: min(100%, 548px); }
 .nav-pill {
   display: inline-flex;
   align-items: center;

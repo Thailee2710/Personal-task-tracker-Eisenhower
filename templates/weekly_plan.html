@@ -11,17 +11,18 @@
 <div class="shell">
   <header class="topbar">
     <div class="brand-block">
-      <span class="logo-mark" aria-hidden="true">🗓️</span>
+      <img class="brand-icon" src="/static/project-icon.svg" alt="Project icon">
       <div>
         <p class="eyebrow">Capacity planning</p>
         <h1>Weekly Planning</h1>
         <p class="lead">Ước lượng tổng thời gian task, nhập khung giờ làm việc khả dụng và giữ buffer cho việc phát sinh.</p>
       </div>
     </div>
-    <div class="top-actions">
+    <div class="top-actions fixed-actions">
       <a class="nav-pill" href="/">Matrix</a>
       <a class="nav-pill active" href="/weekly-plan?week_start={{ plan.week_start }}">Weekly Plan</a>
       <a class="nav-pill" href="/calendar">Calendar</a>
+      <a class="nav-pill notification-bell" href="/notifications" title="Notifications" aria-label="Notifications">🔔<span class="sr-only">Notifications</span></a>
       <a class="nav-pill" href="/history">History</a>
       <a class="nav-pill" href="/settings">Settings</a>
       <form method="post" action="/logout">
