@@ -2,7 +2,7 @@
 
 ![Project signature](static/signature.svg)
 
-A simple task management web app based on the Eisenhower Matrix. It helps you capture tasks, prioritize what matters, plan your week, and track deadlines in a clean interface.
+A simple task management web app based on the Eisenhower Matrix. It helps you capture tasks, prioritize what matters, plan your week, and track deadlines in a warm, light-only workspace interface.
 
 ## Features
 
@@ -11,6 +11,7 @@ A simple task management web app based on the Eisenhower Matrix. It helps you ca
   - Q2: Important + not urgent
   - Q3: Not important + urgent
   - Q4: Not important + not urgent
+- **Warm light workspace UI** with compact navigation, paper-like surfaces, and priority color accents.
 - **Quick task creation** with title, notes, deadline, estimated duration, and energy level.
 - **Automatic quadrant classification** from important/urgent flags.
 - **Direct quick-add** inside each quadrant.
@@ -40,6 +41,7 @@ A simple task management web app based on the Eisenhower Matrix. It helps you ca
 │   ├── core.py
 │   └── main.py
 ├── static/
+│   ├── project-icon.svg
 │   ├── signature.svg
 │   └── styles.css
 ├── templates/
