@@ -734,14 +734,14 @@ p, small { color: var(--muted); }
 }
 .brand-block { align-items: center; gap: 10px; }
 .brand-icon {
-  width: 36px;
-  height: 36px;
-  flex-basis: 36px;
-  padding: 4px;
-  border-radius: 12px;
+  width: 54px;
+  height: 54px;
+  flex-basis: 54px;
+  padding: 5px;
+  border-radius: 16px;
   border: 1px solid rgba(55,45,32,.12);
   background: #fffaf1;
-  box-shadow: 0 6px 12px rgba(76,58,34,.075);
+  box-shadow: 0 8px 18px rgba(76,58,34,.085);
 }
 .lead {
   max-width: 650px;
