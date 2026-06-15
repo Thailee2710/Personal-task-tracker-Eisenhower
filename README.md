@@ -4,6 +4,8 @@
 
 A simple task management web app based on the Eisenhower Matrix. It helps you capture tasks, prioritize what matters, plan your week, and track deadlines in a warm, light-only workspace interface.
 
+The app is password-protected and stores data locally in SQLite.
+
 ## Features
 
 - **Eisenhower Matrix dashboard** with four quadrants:
@@ -111,6 +113,7 @@ http://127.0.0.1:8090
 ## Main Pages
 
 - `/` — Matrix dashboard
+- `/login` — Sign in
 - `/weekly-plan` — Weekly planning
 - `/notifications` — Deadline notifications
 - `/calendar` — Calendar views
