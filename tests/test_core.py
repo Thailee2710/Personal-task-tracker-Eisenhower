@@ -18,6 +18,7 @@ from app.core import (
     move_task,
     set_weekly_capacity,
     toggle_task,
+    update_task,
     update_user_credentials,
 )
 
@@ -75,6 +76,41 @@ def test_create_list_move_toggle_delete_task(tmp_path):
 
     delete_task(db_path, task_id)
     assert get_task(db_path, task_id) is None
+
+
+def test_update_task_changes_editable_fields_and_keeps_done_state(tmp_path):
+    db_path = tmp_path / "tasks.sqlite"
+    init_db(db_path)
+    task_id = create_task(
+        db_path,
+        title="Viết proposal khách hàng",
+        quadrant="q2",
+        description="Chuẩn bị bản nháp đầu tiên",
+        due_date="2026-06-05",
+        duration_minutes=90,
+        energy_level="high",
+    )
+    toggle_task(db_path, task_id, done=True)
+
+    update_task(
+        db_path,
+        task_id,
+        title="Gửi proposal bản cuối",
+        quadrant="q1",
+        description="Đính kèm bảng giá đã cập nhật",
+        due_date="2026-06-04",
+        duration_minutes="45",
+        energy_level="medium",
+    )
+
+    task = get_task(db_path, task_id)
+    assert task["title"] == "Gửi proposal bản cuối"
+    assert task["quadrant"] == "q1"
+    assert task["description"] == "Đính kèm bảng giá đã cập nhật"
+    assert task["due_date"] == "2026-06-04"
+    assert task["duration_minutes"] == 45
+    assert task["energy_level"] == "medium"
+    assert task["done"] is True
 
 
 def test_invalid_quadrant_is_rejected(tmp_path):

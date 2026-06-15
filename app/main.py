@@ -31,6 +31,7 @@ from .core import (
     move_task,
     set_weekly_capacity,
     toggle_task,
+    update_task,
     update_user_credentials,
     user_exists,
 )
@@ -356,6 +357,29 @@ def create_app(
             duration_minutes=duration_minutes,
             energy_level=energy_level,
             quadrant=selected_quadrant,
+        )
+        return RedirectResponse("/", status_code=303)
+
+    @app.post("/tasks/{task_id}/edit")
+    async def edit_task(
+        task_id: int,
+        username: str = Depends(require_user),
+        title: str = Form(""),
+        description: str = Form(""),
+        due_date: str = Form(""),
+        duration_minutes: str = Form(""),
+        energy_level: str = Form("medium"),
+        quadrant: str = Form(...),
+    ):
+        update_task(
+            db_path,
+            task_id,
+            title=title,
+            description=description,
+            due_date=due_date,
+            duration_minutes=duration_minutes,
+            energy_level=energy_level,
+            quadrant=quadrant,
         )
         return RedirectResponse("/", status_code=303)
 

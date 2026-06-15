@@ -153,13 +153,41 @@
               <input type="hidden" name="done" value="{{ 'false' if task.done else 'true' }}">
               <button class="small" type="submit">{{ 'Mở lại' if task.done else 'Xong' }}</button>
             </form>
-            <form method="post" action="/tasks/{{ task.id }}/move">
-              <select name="quadrant" aria-label="Chuyển quadrant" onchange="this.form.submit()">
-                {% for move_key, move_q in quadrants.items() %}
-                <option value="{{ move_key }}" {% if move_key == task.quadrant %}selected{% endif %}>{{ move_q.title }}</option>
-                {% endfor %}
-              </select>
-            </form>
+            <details class="task-editor">
+              <summary>Sửa</summary>
+              <form method="post" action="/tasks/{{ task.id }}/edit" class="edit-task-form">
+                <label class="wide">Tiêu đề
+                  <input name="title" value="{{ task.title }}" required>
+                </label>
+                <label>Quadrant
+                  <select name="quadrant" aria-label="Quadrant">
+                    {% for move_key, move_q in quadrants.items() %}
+                    <option value="{{ move_key }}" {% if move_key == task.quadrant %}selected{% endif %}>{{ move_q.title }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label>Deadline
+                  <input name="due_date" type="date" value="{{ task.due_date }}">
+                </label>
+                <label>Thời gian (phút)
+                  <input name="duration_minutes" type="number" min="0" step="1" value="{{ task.duration_minutes }}">
+                </label>
+                <label>Mức năng lượng
+                  <select name="energy_level">
+                    <option value="low" {% if task.energy_level == 'low' %}selected{% endif %}>Thấp</option>
+                    <option value="medium" {% if task.energy_level == 'medium' %}selected{% endif %}>Vừa</option>
+                    <option value="high" {% if task.energy_level == 'high' %}selected{% endif %}>Cao / deep work</option>
+                  </select>
+                </label>
+                <label class="wide">Ghi chú
+                  <textarea name="description" rows="2">{{ task.description }}</textarea>
+                </label>
+                <div class="edit-actions">
+                  <button class="small" type="submit">Lưu thay đổi</button>
+                  <span class="edit-hint">Cập nhật ngay trên thẻ, không rời Matrix.</span>
+                </div>
+              </form>
+            </details>
             <form method="post" action="/tasks/{{ task.id }}/delete" onsubmit="return confirm('Xoá task này?')">
               <button class="small danger" type="submit">Xoá</button>
             </form>

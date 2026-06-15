@@ -132,6 +132,51 @@ def test_create_move_toggle_delete_task_over_http(tmp_path):
     assert "Gọi khách hàng A" not in dashboard.text
 
 
+def test_dashboard_renders_inline_task_editor_and_updates_task_over_http(tmp_path):
+    client = make_client(tmp_path)
+    client.post("/login", data={"username": "admin", "password": "secret-pass"})
+    client.post(
+        "/tasks",
+        data={
+            "title": "Chuẩn bị brief",
+            "description": "Bản đầu",
+            "quadrant": "q2",
+            "due_date": "2026-06-10",
+            "duration_minutes": "60",
+            "energy_level": "high",
+        },
+    )
+
+    dashboard = client.get("/")
+    assert dashboard.status_code == 200
+    assert "Sửa" in dashboard.text
+    assert 'action="/tasks/1/edit"' in dashboard.text
+    assert 'value="Chuẩn bị brief"' in dashboard.text
+    assert "Bản đầu" in dashboard.text
+
+    updated = client.post(
+        "/tasks/1/edit",
+        data={
+            "title": "Chốt brief cuối",
+            "description": "Đã thêm scope và deadline",
+            "quadrant": "q1",
+            "due_date": "2026-06-08",
+            "duration_minutes": "30",
+            "energy_level": "medium",
+        },
+        follow_redirects=False,
+    )
+    assert updated.status_code == 303
+    assert updated.headers["location"] == "/"
+
+    dashboard = client.get("/")
+    assert "Chốt brief cuối" in dashboard.text
+    assert "Đã thêm scope và deadline" in dashboard.text
+    assert "2026-06-08" in dashboard.text
+    assert "30 phút" in dashboard.text
+    assert "Chuẩn bị brief" not in dashboard.text
+
+
 def test_quadrant_plus_forms_create_task_directly_in_selected_quadrant(tmp_path):
     client = make_client(tmp_path)
     client.post("/login", data={"username": "admin", "password": "secret-pass"})

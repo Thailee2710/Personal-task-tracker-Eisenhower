@@ -381,6 +381,35 @@ button.danger:hover { background: #fee2e2; }
 .task-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .task-actions form { margin: 0; }
 .task-actions select { min-width: 190px; padding: 7px 10px; border-radius: 999px; }
+.task-editor { flex: 1 1 100%; }
+.task-editor summary {
+  display: inline-flex;
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fffaf1;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+.task-editor summary::-webkit-details-marker { display: none; }
+.task-editor[open] summary { margin-bottom: 10px; }
+.edit-task-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--paper-2);
+}
+.edit-task-form label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 650; }
+.edit-task-form .wide, .edit-actions { grid-column: span 2; }
+.edit-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.edit-hint { color: var(--muted-soft); font-size: 12px; }
 .empty {
   display: grid;
   place-items: center;
@@ -401,7 +430,8 @@ button.danger:hover { background: #fee2e2; }
 @media (max-width: 840px) {
   .shell { width: min(100% - 22px, 1240px); padding-top: 12px; }
   .matrix, .task-form { grid-template-columns: 1fr; }
-  .task-form .wide { grid-column: auto; }
+  .task-form .wide, .edit-task-form .wide, .edit-actions { grid-column: auto; }
+  .edit-task-form { grid-template-columns: 1fr; }
   .topbar { align-items: flex-start; flex-direction: column; }
   .top-actions { justify-content: start; grid-template-columns: repeat(3, max-content); }
   .top-actions form { grid-column: 1 / -1; justify-self: start; }

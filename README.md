@@ -15,7 +15,7 @@ A simple task management web app based on the Eisenhower Matrix. It helps you ca
 - **Quick task creation** with title, notes, deadline, estimated duration, and energy level.
 - **Automatic quadrant classification** from important/urgent flags.
 - **Direct quick-add** inside each quadrant.
-- **Task actions**: move, complete/reopen, and soft delete.
+- **Task actions**: edit details inline, move, complete/reopen, and soft delete.
 - **Weekly Planning** page for capacity planning and workload balance.
 - **Q2 Focus** section to protect important non-urgent tasks before they become urgent.
 - **Energy-aware suggestions** to pick tasks based on your current energy level.

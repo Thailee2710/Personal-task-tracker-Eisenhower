@@ -453,6 +453,40 @@ def list_energy_suggestions(db_path: str | Path, *, energy_level: str, limit: in
     return [task for row in rows if (task := row_to_task(row)) is not None]
 
 
+def update_task(
+    db_path: str | Path,
+    task_id: int,
+    *,
+    title: str,
+    quadrant: str,
+    description: str = "",
+    due_date: str = "",
+    duration_minutes: int | str | None = 0,
+    energy_level: str | None = "medium",
+) -> None:
+    validate_quadrant(quadrant)
+    title = title.strip()
+    if not title:
+        raise ValueError("Title must not be empty")
+    duration = normalize_duration_minutes(duration_minutes)
+    energy = normalize_energy_level(energy_level)
+    with connect(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE tasks
+            SET title = ?,
+                description = ?,
+                quadrant = ?,
+                due_date = ?,
+                duration_minutes = ?,
+                energy_level = ?,
+                updated_at = ?
+            WHERE id = ? AND deleted_at = ''
+            """,
+            (title, description.strip(), quadrant, due_date.strip(), duration, energy, now_iso(), task_id),
+        )
+
+
 def move_task(db_path: str | Path, task_id: int, quadrant: str) -> None:
     validate_quadrant(quadrant)
     with connect(db_path) as conn:
