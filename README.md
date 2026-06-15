@@ -126,12 +126,6 @@ http://127.0.0.1:8090
 pytest tests -q
 ```
 
-## Notes
-
-- Do not commit `.env`, SQLite database files, or credentials.
-- Use a strong secret key and password in production.
-- Use HTTPS if the app is deployed publicly.
-
 ## License
 
 MIT License. See [LICENSE](LICENSE).
